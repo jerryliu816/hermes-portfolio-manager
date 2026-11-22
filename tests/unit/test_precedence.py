@@ -2,8 +2,8 @@
 
 The rule exists because two sources can disagree about what an account
 *contains*, not merely what it is worth. Measured on the real pair, the
-aggregation was missing an entire $383K holding the direct source reported,
-while the two totals still agreed to within $469.
+aggregation was missing an entire six-figure holding the direct source
+reported, while the two totals still agreed to within a few hundred dollars.
 """
 
 from __future__ import annotations

@@ -27,8 +27,8 @@ Three enforcement mechanisms, not one:
 ## Every reading carries its own caveats
 
 Each portfolio tool returns `as_of_date`, `completeness`, and the stale,
-unclassified and missing-basis fractions. An analyst reasoning about $2.9M of
-data whose as-of date is unknown should know that, and cannot be relied on to
+unclassified and missing-basis fractions. An analyst reasoning about a
+portfolio whose largest share has an unknown as-of date should know that, and cannot be relied on to
 ask. This is tested by *calling* each tool, not by inspecting source — what
 matters is what reaches the analyst.
 

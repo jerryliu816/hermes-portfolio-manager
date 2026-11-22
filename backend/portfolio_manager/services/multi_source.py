@@ -7,9 +7,9 @@ account's holdings wholesale.
 
 Wholesale replacement is the point. A document that wins an account is trusted
 for what that account *contains*, not merely what it is worth -- because the
-two can differ. On the real pair the aggregation was missing an entire $383K
+two can differ. On the real pair the aggregation was missing an entire six-figure
 holding the direct source reported, while their totals still agreed to within
-$469.
+a few hundred dollars.
 """
 
 from __future__ import annotations

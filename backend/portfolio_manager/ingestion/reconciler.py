@@ -7,7 +7,7 @@ one part of the pipeline that a language model has no influence over.
 Two rules earned from the real corpus:
 
 * **Tolerance is capped.** A percentage tolerance alone grants proportionally
-  more slack the more money is at stake -- 0.1% of a $4.8M portfolio is $4,800.
+  more slack the more money is at stake -- 0.1% of a $5M portfolio is $5,000.
   The effective tolerance is `min(max(abs, pct x value), cap)`.
 * **An account total may legitimately exceed the sum of its holdings.**
   Settlement-fund cash is reported separately from the holdings table. Measured

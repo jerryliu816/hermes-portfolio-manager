@@ -142,8 +142,8 @@ def test_every_classification_explains_itself() -> None:
 def test_money_market_funds_with_truncated_names_still_classify(symbol: str) -> None:
     """Real exports truncate these: 'VANGUARD TREASURY...' says nothing.
 
-    Caught by looking at the rendered UI, where $180K of a treasury
-    money-market fund was sitting in the "Unknown" allocation slice.
+    Caught by looking at the rendered UI, where six figures of a
+    treasury money-market fund was sitting in the "Unknown" allocation slice.
     """
     result = classify_security(symbol, "VANGUARD TREASURY...")
     assert result.asset_class is AssetClass.CASH_EQUIVALENT

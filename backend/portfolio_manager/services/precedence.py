@@ -4,7 +4,7 @@ An account can be described by more than one document, and those descriptions
 can disagree about more than valuation. Measured on the real pair, Fidelity's
 aggregation and Vanguard's own statement disagree on 35 of 44 securities --
 entire positions present in one and absent from the other -- while their totals
-agree to within $469. That is a rebalance the aggregation had not yet picked
+agree to within a few hundred dollars. That is a rebalance the aggregation had not yet picked
 up, not a pricing lag.
 
 So the rule is **precedence, not patching**: for each account, one document

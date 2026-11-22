@@ -84,8 +84,8 @@ of the same account — and they can disagree about **what the account contains*
 not merely what it is worth.
 
 Measured on the corpus this was built against: the two sources agreed on their
-*totals* to within $469, and disagreed on **35 of 44 securities**. An entire
-$383K holding was present in one and absent from the other. The aggregation had
+*totals* to within a few hundred dollars, and disagreed on **35 of 44 securities**. An entire
+six-figure holding was present in one and absent from the other. The aggregation had
 missed a rebalance.
 
 The first implementation refreshed prices onto the aggregated holdings. It moved

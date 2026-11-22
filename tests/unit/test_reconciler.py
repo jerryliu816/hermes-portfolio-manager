@@ -47,7 +47,7 @@ def test_real_rounding_drift_passes() -> None:
 
 
 def test_percentage_tolerance_is_capped() -> None:
-    """0.1% of $4.8M would be $4,800 of silent slack. The cap forbids that."""
+    """0.1% of $5M would be $5,000 of silent slack. The cap forbids that."""
     portfolio = Decimal("1976601.90")
     assert TOL.for_value(portfolio) == Decimal("25.00")
     result = check_position_value("BIG", Decimal("1"), portfolio, portfolio + Decimal("4000"), TOL)

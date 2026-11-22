@@ -14,8 +14,8 @@ boundary is enforced three ways rather than trusted:
    without someone noticing.
 
 Every read also returns the snapshot date, completeness, and how much of the
-value is stale or unclassified. An analyst reasoning about $2.9M of data whose
-as-of date is unknown should know that, and cannot be relied on to ask.
+value is stale or unclassified. An analyst reasoning about a portfolio whose largest
+share has an unknown as-of date should know that, and cannot be relied on to ask.
 
 Transport: Streamable HTTP, verified against the installed Hermes client, which
 defaults to it for `url` servers (`transport: sse` is an opt-in override).
