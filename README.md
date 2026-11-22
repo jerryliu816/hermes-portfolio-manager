@@ -1,133 +1,121 @@
 # Hermes Portfolio Manager
 
-**A personal portfolio system of record that uses an LLM to read your brokerage
-statements, and refuses to trust it with the arithmetic.**
+A personal portfolio tracker. It reads brokerage CSV exports and PDF statements
+with Claude, checks the extracted numbers with deterministic code, and stores
+each import as a dated snapshot of your holdings. It reports allocation, tax
+placement, gains, and drift from an investment policy you define. An optional
+AI advisor, built on the Hermes agent, can read the portfolio and propose
+rebalancing trades. It has read-only access to your holdings.
 
-Drop in a CSV export or a PDF statement from your brokerage. Claude reads it; a
-deterministic pipeline checks every number it read; and the result becomes a
-dated snapshot of what you actually own. On top of that sit allocation, tax
-placement, gains, and drift from your own investment policy, plus an optional
-AI advisor that can propose a rebalance but can never change your holdings or
-invent a figure.
+The app and its database run on your own machine, and imported statements are
+stored there. When Claude is the extraction provider, each document is sent to
+Anthropic's API to be read; the built-in `mock` provider reads CSVs locally and
+sends nothing.
 
-It runs on your own machine. Your statements and your data stay there.
+## Background
 
----
+Brokerage exports are inconsistent. Formats differ between institutions and
+change without notice, fund names are heavily abbreviated, and `--` is used for
+several different kinds of missing value. Some institutions also include
+accounts held elsewhere, reported second-hand and sometimes weeks out of date.
 
-## Why this exists
+A language model handles that variety well, but its output still needs to be
+checked before it is stored. The project is split into three layers:
 
-Anyone with accounts at more than one institution knows the problem. Each
-brokerage exports in its own format, and changes it without notice. Fund names
-are abbreviated past recognition. `--` means six different kinds of "nothing".
-And one institution will happily report accounts held at *another*,
-second-hand and weeks out of date, in the same file as its own.
-
-A language model is very good at reading documents like that. It is not
-something you should let decide what your net worth is. So this project splits
-the job:
-
-| Layer | Answers | Who decides |
+| Layer | Question it answers | How |
 |---|---|---|
-| **Extraction** | "What does this document say?" | A model (Claude), behind a replaceable interface |
-| **Portfolio manager** | "What is true?" | Deterministic code: parsing, validation, reconciliation |
-| **Advisor** *(optional)* | "What should I do about it?" | An agent ([Hermes](docs/HERMES_INTEGRATION.md)), read-only |
+| **Extraction** | What does this document say? | Claude, behind a replaceable provider interface |
+| **Portfolio manager** | What do I hold? | Deterministic parsing, validation and reconciliation |
+| **Advisor** *(optional)* | What should I change? | The [Hermes](docs/HERMES_INTEGRATION.md) agent, with read-only access |
 
-Everything the model produces passes through validation and arithmetic before it
-becomes state, and the model has no influence over that step. The advisor reads
-the portfolio but has no way to change it.
+All model output goes through validation and reconciliation before anything is
+written to the database.
 
-## The one idea worth knowing up front
+## Data quality
 
-**Every figure travels with what qualifies it.**
+Totals are shown together with the caveats that apply to them: how much of the
+value is stale, in accounts whose tax treatment hasn't been confirmed, or
+missing a cost basis. Missing values are shown as missing.
 
-A total is never shown alone if part of it is stale, unclassified, or missing a
-cost basis. Where a number is unknown, the app says so instead of estimating
-one.
-
-That isn't defensiveness. On the real portfolio this was built against, 61% of
-the value sat in accounts whose as-of date was unknown, and the aggregation feed
-reporting them had missed an entire rebalance. A confident-looking total would
-have been wrong in a way nothing on screen revealed.
+This matters in practice. In the portfolio this was developed against, 61% of
+the value was in accounts whose as-of date was unknown, and the aggregation feed
+reporting them had missed a rebalance. A single total would have hidden that.
 
 ## Features
 
-### Import anything, lose nothing
-- **CSV exports and PDF statements**, read by Claude in two stages: first *which
-  accounts does this document contain?*, then *what does each one hold?*
-  Built and tested on Fidelity and Vanguard documents;
-  [adding an institution](docs/ADDING_AN_INSTITUTION.md) covers the rest.
-- **A completeness check no arithmetic can replace.** If an account found in the
-  first stage goes missing in the second, the import is held for review, even
-  though the numbers that remain reconcile perfectly.
-- **Deduplicated by content**, so importing the same file twice does nothing.
-- **Originals kept forever** under `data/sources/`, so any reading can be
-  re-derived when the extraction improves or a number is disputed.
-- **Several documents, one portfolio.** Import an aggregator's export and a
-  direct statement together. For each account, the more authoritative source
-  wins and supplies it whole; holdings are never patched together from two
-  sources of different ages.
-- **Nothing silently skipped.** Accounts with no value are named; a failed
-  reconciliation is kept and shown for review, never discarded.
+### Importing
+- CSV exports and PDF statements are read in two passes: the first finds the
+  accounts in the document, the second extracts each account's holdings.
+  Fidelity and Vanguard documents are supported and tested; see
+  [adding an institution](docs/ADDING_AN_INSTITUTION.md) for others.
+- If an account found in the first pass is missing from the second, the import
+  is held for review, even when the remaining numbers reconcile.
+- Files are deduplicated by content, so importing the same file twice has no
+  effect.
+- Original files are kept under `data/sources/`, so an import can be re-read if
+  extraction improves or a number is questioned.
+- An aggregator's export and a direct statement can be imported together. For
+  each account, the more authoritative source supplies all of its holdings;
+  the two sources are never mixed within one account.
+- Accounts reporting no value are listed by name when skipped. Imports that
+  fail reconciliation are kept and flagged for review.
 
-### Numbers you can trust
-- **Reconciliation, not hope.** Quantity × price against value, cost basis +
-  gain against value, holdings + cash against account totals, account totals
-  against the portfolio. Tolerances are capped so a large account can't hide a
-  real gap inside "rounding".
-- **Absence is not zero.** A missing cost basis stays missing, and gains are
-  reported for the part of the portfolio that has one.
-- **Money is never a float**: `Decimal` in Python, `NUMERIC(20,6)` in Postgres,
-  and strings on every wire.
-- **Share counts are never summed across accounts**, because the same fund can
-  be pre-split in one source and post-split in another. Values add; quantities
-  stay per account.
+### Validation
+- Reconciliation checks quantity × price against value, cost basis plus gain
+  against value, holdings plus cash against account totals, and account totals
+  against the portfolio total. Tolerances are capped, so a large account can't
+  absorb a real discrepancy as rounding.
+- A missing cost basis stays missing. Gains are reported for the portion of the
+  portfolio that has one.
+- Money is stored as `Decimal` in Python and `NUMERIC(20,6)` in Postgres, and
+  sent as strings in the API.
+- Share counts are kept per account and never summed across accounts, because
+  the same fund can appear pre-split in one source and post-split in another.
 
-### See where you stand
-- **Dashboard** with a value-over-time chart and the caveats that qualify each
-  figure: stale value, unconfirmed tax treatment, missing cost basis,
-  incomplete imports.
-- **Allocation and tax placement.** Accounts whose tax treatment you haven't
-  confirmed are left out of tax analysis rather than assumed taxable.
-- **Exposure** to a security across every account, **gains**, **cash**, and
-  **snapshot comparisons**, reported as a change in value and never dressed up
-  as a return.
+### Analysis
+- A dashboard with a value-over-time chart, showing caveats for stale value,
+  unconfirmed tax treatment, missing cost basis and incomplete imports.
+- Asset allocation and tax placement. Accounts without a confirmed tax
+  treatment are excluded from tax analysis.
+- Exposure to a single security across all accounts, unrealized gains, cash,
+  and comparisons between snapshots. Snapshot comparisons show the change in
+  value; they are not investment returns.
 
-### Your plan, not the app's
-- **An investment policy you write**: target weights, drift bands and
-  constraints, in commented YAML. Every save is a new version, so "what was my
-  policy when I made that call?" stays answerable.
-- **Drift, honestly labelled.** *Out of policy* is a fact about the portfolio;
-  *provisional* means the data is too uncertain to act on. A portfolio can be
-  in band and still provisional.
-- **A recommendation journal** of what was suggested and what you decided.
-  Deferring is not rejecting, and decisions append rather than overwrite.
+### Investment policy and journal
+- You write the policy: target weights, drift bands and constraints, in YAML
+  with comments. Each save creates a new version, so earlier policies remain
+  available.
+- Holdings outside their drift band are marked *out of policy*. Results based
+  on uncertain data are marked *provisional*; a portfolio can be within its
+  bands and still provisional.
+- A journal records each recommendation and your decision on it. Deferred items
+  stay open, and each decision is added to the item's history.
 
-### An AI advisor that can't touch your money *(optional)*
-- **Chat with an agent that knows your portfolio.** Tell it your philosophy,
-  views and preferences, give it pages or PDFs to weigh, and ask for a
-  rebalance. It researches current news and proposes trades per account.
-- **The model never produces a number.** Every figure in a proposal (trades,
-  resulting allocation, estimated gains, uninvested cash) comes from the app's
-  own rebalancing engine. When the advisor saves a proposal, the app re-runs it
-  and stores its own result.
-- **Dollars, not shares**, and never a transfer between accounts.
-- **No targets, no proposal.** With neither a policy nor targets you've agreed
-  to, the engine refuses and the advisor has to ask you.
+### AI advisor (optional)
+- A chat page where the Hermes agent reads your portfolio, your stated
+  investment philosophy, and any views, preferences, web pages or PDFs you add.
+  It can research current news and propose trades for each account.
+- All figures in a proposal (trade amounts, resulting allocation, estimated
+  gains and uninvested cash) are calculated by the app's rebalancing engine.
+  When a proposal is saved, the app recalculates it and stores its own figures.
+- Trades are expressed in dollars per account and security. Proposals never
+  move money between accounts.
+- Without a policy or agreed targets, the engine won't produce a proposal, and
+  the advisor asks you for targets.
 
-### Built to be scripted and kept
-- **A full CLI.** Everything the web UI does works without a browser, which is
-  how reconciliation output is easiest to read.
-- **An MCP server** with 24 tools so any agent can read the portfolio: read-only
-  apart from three advisory writes, each enforced by a test and by
-  `SET TRANSACTION READ ONLY`.
-- **Docker Compose**, or a macOS login agent that starts it for you.
-- **Backup and restore** that keep the database and the original documents
-  together, because either one without the other is incomplete.
+### Command line, agents and operations
+- A CLI that covers everything the web UI does.
+- An MCP server with 24 tools for AI agents. All are read-only except three
+  that record recommendations, decisions and advisor notes. A test and
+  `SET TRANSACTION READ ONLY` enforce this.
+- Docker Compose, or a macOS login agent that starts the app automatically.
+- Backup and restore that keep the database and the original documents
+  together in one archive.
 
-### What it deliberately does not do
-It doesn't trade or move money: nothing the advisor proposes happens unless you
-do it yourself. It doesn't fill gaps with assumptions. It isn't investment
-advice.
+### Limitations
+The app doesn't place trades or move money; any change the advisor proposes is
+yours to carry out. It doesn't fill in missing data with estimates. It is not
+investment advice.
 
 ## Architecture
 
@@ -158,30 +146,31 @@ flowchart TB
     mcp <--> hermes["Hermes agent<br/>optional advisor"]
 ```
 
-The advisor's chat runs in the React UI and is relayed to Hermes by the API, so
-the agent's key never reaches the browser.
+The advisor's chat runs in the React UI. The API relays it to Hermes, so the
+agent's API key stays on the server.
 
 | Layer | Lives in | What it is responsible for |
 |---|---|---|
 | **Extraction** | `extraction/` | A vendor-neutral provider interface, versioned prompts, and a strict schema that carries money as **strings**, exactly as printed. Providers: Claude, a deterministic `mock` for tests, and a stub for a local model. A benchmark scores a provider against documents with known-good readings before it can replace another. |
-| **Ingestion** | `ingestion/` | The only place text becomes `Decimal`. Detects the document kind, cleans it, checks completeness, reconciles the arithmetic, and matches accounts across sources. No model output influences any of it. |
+| **Ingestion** | `ingestion/` | The only place text becomes `Decimal`. Detects the document kind, cleans it, checks completeness, reconciles the arithmetic, and matches accounts across sources. No model output is used at this stage. |
 | **Services** | `services/` | The system of record: snapshots, which source wins each account, account and security classification, policy versions, the journal, backups. |
 | **Analytics** | `analytics/` | Pure functions over a snapshot: allocation, exposure, gains, cash, comparisons, policy drift, and the rebalancing engine. |
 | **Interfaces** | `api/`, `cli.py`, `hermes/` | REST for the React UI, a CLI for everything, and an MCP server for agents. All three go through the same services. |
 | **Frontend** | `frontend/` | React 19, Tailwind, TanStack Query and Recharts, served by FastAPI from the same origin in production. |
 
-A few decisions shape everything else:
+Some design decisions that affect the whole codebase:
 
-- **Price lives on the position, not the security.** One document can
-  legitimately show two prices for the same symbol.
-- **A security doesn't need a ticker.** 529 plan portfolios often have none, so
-  identity is the symbol when present, otherwise a normalized name.
-- **As-of date is per account**, because an aggregation feed's accounts are as
-  old as its last sync, not as old as the file.
-- **Classification declines rather than guesses.** "Unknown" is a valid,
-  frequent and correct answer.
+- Price is stored on each position, because one document can show two
+  different prices for the same symbol.
+- A security doesn't need a ticker symbol. 529 plan portfolios often have none,
+  so a security is identified by its symbol when present and by its normalized
+  name otherwise.
+- The as-of date is stored per account. Accounts reported through an
+  aggregation feed are only as current as the feed's last sync.
+- Security classification returns "unknown" when the name doesn't clearly
+  identify an asset class.
 
-The full picture, with the pipeline end to end, is in
+More detail, including the full import pipeline, is in
 [Architecture](docs/ARCHITECTURE.md) and [Data model](docs/DATA_MODEL.md).
 
 ## Quick start
@@ -242,10 +231,10 @@ Playwright end-to-end tests. `ruff`, `ruff format`, `mypy --strict`, `tsc` and
 `oxlint` all run clean. `benchmark` calls the configured extraction provider,
 so with Claude it costs a little money.
 
-**No real financial data lives in this repository.** Test fixtures are
-anonymized derivatives of a private corpus. They keep every structural quirk
-(missing tickers, `--` sentinels, split-price divergence) and none of the
-content. A guard test reads the owner's statements at run time and fails if
+The repository contains no real financial data. Test fixtures are anonymized
+versions of real exports: they keep the structural quirks (missing tickers,
+`--` placeholders, prices that differ between sources) with the content
+replaced. A guard test reads the owner's statements at run time and fails if
 any real name, account number, amount or share count appears in a tracked
 file.
 
@@ -263,4 +252,4 @@ complete source code available to them under the same license. Running it
 unmodified, or modifying it for your own private use, carries no such
 obligation.
 
-This summary is for convenience; the [license text](LICENSE) is what applies.
+This is a summary; the [license text](LICENSE) is the binding version.
