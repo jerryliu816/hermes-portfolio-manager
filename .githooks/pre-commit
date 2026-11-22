@@ -1,0 +1,25 @@
+#!/bin/sh
+# Block secrets and real financial data from ever entering history.
+fail=0
+
+# 1. Anthropic API keys in staged content
+if git diff --cached -U0 | grep -nE 'sk-ant-[A-Za-z0-9_-]{8}' >/dev/null 2>&1; then
+    echo "pre-commit: BLOCKED - an Anthropic API key appears in staged content." >&2
+    fail=1
+fi
+
+# 2. Files that must never be tracked
+for path in $(git diff --cached --name-only); do
+    case "$path" in
+        .env|.env.*|test/*|data/*|PROGRESS.md|docs/FOR_FUTURE_SESSIONS.md)
+            [ "$path" = ".env.example" ] && continue
+            # A deletion is how these leave the index; only additions leak.
+            git cat-file -e ":$path" 2>/dev/null || continue
+            echo "pre-commit: BLOCKED - '$path' must not be committed (secrets / real financial data)." >&2
+            fail=1
+            ;;
+    esac
+done
+
+[ "$fail" -eq 0 ] || echo "pre-commit: commit aborted. Nothing was committed." >&2
+exit $fail

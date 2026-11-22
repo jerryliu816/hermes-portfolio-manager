@@ -1,0 +1,14 @@
+# Development overlay: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`
+#
+# Runs the app from the working tree with reload, so a code change does not
+# require a rebuild. The frontend is served by Vite separately (`make dev-ui`).
+services:
+  app:
+    build:
+      target: app
+    command: ["serve"]
+    environment:
+      EXTRACTION_PROVIDER: mock
+    volumes:
+      - ./backend:/app/backend:ro
+      - ./alembic.ini:/app/alembic.ini:ro

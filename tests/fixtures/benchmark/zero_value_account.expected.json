@@ -1,0 +1,51 @@
+{
+ "accounts": [
+  {
+   "account_type_hint": "Roth IRA",
+   "cash_balance": null,
+   "display_name": "ROTH IRA",
+   "external_account_key": "Z10000005",
+   "institution": "unknown",
+   "is_aggregated": false,
+   "positions": [
+    {
+     "cost_basis": null,
+     "description": "ZETA FUND",
+     "market_value": "$100.00",
+     "price": "$10.00",
+     "quantity": "10.000",
+     "symbol": "FFF",
+     "unrealized_gain_loss": null
+    }
+   ],
+   "reported_value": null
+  },
+  {
+   "account_type_hint": null,
+   "cash_balance": null,
+   "display_name": "Opaque Plan ABC-12345",
+   "external_account_key": "99999999-0000-1111-2222-333333333333",
+   "institution": "unknown",
+   "is_aggregated": true,
+   "positions": [
+    {
+     "cost_basis": null,
+     "description": "ETA HOLDING",
+     "market_value": null,
+     "price": "$5.00",
+     "quantity": "0",
+     "symbol": "GGG",
+     "unrealized_gain_loss": null
+    }
+   ],
+   "reported_value": null
+  }
+ ],
+ "as_of_date": "Aug-26-2026",
+ "as_of_date_source": "Date downloaded Aug-26-2026 3:04 a.m ET",
+ "document_type": "positions_export",
+ "producing_institution": "unknown",
+ "reported_total_value": null,
+ "schema_version": "1.1",
+ "warnings": []
+}

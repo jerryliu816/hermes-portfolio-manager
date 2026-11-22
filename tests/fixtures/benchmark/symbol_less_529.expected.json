@@ -1,0 +1,40 @@
+{
+ "accounts": [
+  {
+   "account_type_hint": "529",
+   "cash_balance": null,
+   "display_name": "Sam Sample-Individual 529 College Savings Account, Pat Sample-900000002-01",
+   "external_account_key": "ffffffff-1111-2222-3333-444444444444",
+   "institution": "unknown",
+   "is_aggregated": true,
+   "positions": [
+    {
+     "cost_basis": null,
+     "description": "Sample 500 Index Portfolio",
+     "market_value": "$15000.00",
+     "price": "$50.00",
+     "quantity": "300.000",
+     "symbol": null,
+     "unrealized_gain_loss": null
+    },
+    {
+     "cost_basis": null,
+     "description": "Sample Short-Term Bond Portfolio",
+     "market_value": null,
+     "price": "$10.00",
+     "quantity": "0",
+     "symbol": null,
+     "unrealized_gain_loss": null
+    }
+   ],
+   "reported_value": null
+  }
+ ],
+ "as_of_date": "Aug-26-2026",
+ "as_of_date_source": "Date downloaded Aug-26-2026 3:04 a.m ET",
+ "document_type": "positions_export",
+ "producing_institution": "unknown",
+ "reported_total_value": null,
+ "schema_version": "1.1",
+ "warnings": []
+}

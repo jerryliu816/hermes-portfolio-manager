@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/*
+ * Theme tokens. Light is the bare :root; dark is declared twice on purpose --
+ * once for the OS setting and once for an explicit toggle -- so the toggle wins
+ * in both directions.
+ */
+:root {
+  color-scheme: light;
+  --surface-page: #f7f7f5;
+  --surface-1: #fcfcfb;
+  --surface-2: #f0f0ed;
+  --border: #dedeD8;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #77766f;
+
+  /* Categorical series, validated for the light surface. */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+
+  /* Status colors are reserved and never reused as a series. */
+  --status-good: #008300;
+  --status-warning: #a86b00;
+  --status-critical: #c62b2b;
+  --status-good-bg: #e8f4e8;
+  --status-warning-bg: #fdf3e0;
+  --status-critical-bg: #fbeaea;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-page: #131312;
+    --surface-1: #1a1a19;
+    --surface-2: #232322;
+    --border: #33332f;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #93928a;
+
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+
+    --status-good: #4caf50;
+    --status-warning: #d99a2b;
+    --status-critical: #ef5350;
+    --status-good-bg: #1c2a1c;
+    --status-warning-bg: #2e2616;
+    --status-critical-bg: #2e1a1a;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-page: #131312;
+  --surface-1: #1a1a19;
+  --surface-2: #232322;
+  --border: #33332f;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #93928a;
+
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+
+  --status-good: #4caf50;
+  --status-warning: #d99a2b;
+  --status-critical: #ef5350;
+  --status-good-bg: #1c2a1c;
+  --status-warning-bg: #2e2616;
+  --status-critical-bg: #2e1a1a;
+}
+
+@theme inline {
+  --color-page: var(--surface-page);
+  --color-surface: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-ink: var(--text-primary);
+  --color-ink-2: var(--text-secondary);
+  --color-ink-3: var(--text-muted);
+  --color-good: var(--status-good);
+  --color-warn: var(--status-warning);
+  --color-bad: var(--status-critical);
+}
+
+html, body, #root { height: 100%; }
+body {
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Money and other figures line up in columns when the digits are tabular. */
+.tnum { font-variant-numeric: tabular-nums; }
+
+:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }

@@ -1,0 +1,21 @@
+# Never build the private corpus or credentials into an image.
+.env
+.env.*
+test/
+data/
+
+.git/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+frontend/node_modules/
+frontend/dist/
+
+*.md
+!README.md

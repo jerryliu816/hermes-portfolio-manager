@@ -1,0 +1,40 @@
+{
+ "accounts": [
+  {
+   "account_type_hint": "Roth IRA",
+   "cash_balance": null,
+   "display_name": "ROTH IRA",
+   "external_account_key": "Z10000002",
+   "institution": "unknown",
+   "is_aggregated": false,
+   "positions": [
+    {
+     "cost_basis": null,
+     "description": "BETA FUND",
+     "market_value": "$1000.00",
+     "price": "$100.00",
+     "quantity": "10.000",
+     "symbol": "BBB",
+     "unrealized_gain_loss": null
+    },
+    {
+     "cost_basis": "$800.00",
+     "description": "GAMMA FUND",
+     "market_value": "$1000.00",
+     "price": "$100.00",
+     "quantity": "10.000",
+     "symbol": "CCC",
+     "unrealized_gain_loss": "+$200.00"
+    }
+   ],
+   "reported_value": null
+  }
+ ],
+ "as_of_date": "Aug-26-2026",
+ "as_of_date_source": "Date downloaded Aug-26-2026 3:04 a.m ET",
+ "document_type": "positions_export",
+ "producing_institution": "unknown",
+ "reported_total_value": null,
+ "schema_version": "1.1",
+ "warnings": []
+}

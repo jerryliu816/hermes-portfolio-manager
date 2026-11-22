@@ -1,0 +1,31 @@
+{
+ "accounts": [
+  {
+   "account_type_hint": "Roth IRA",
+   "cash_balance": null,
+   "display_name": "ROTH IRA",
+   "external_account_key": "Z10000006",
+   "institution": "unknown",
+   "is_aggregated": false,
+   "positions": [
+    {
+     "cost_basis": null,
+     "description": "THETA FUND",
+     "market_value": "$100.00",
+     "price": "$20.00",
+     "quantity": "5.000",
+     "symbol": "HHH",
+     "unrealized_gain_loss": null
+    }
+   ],
+   "reported_value": null
+  }
+ ],
+ "as_of_date": null,
+ "as_of_date_source": null,
+ "document_type": "positions_export",
+ "producing_institution": "unknown",
+ "reported_total_value": null,
+ "schema_version": "1.1",
+ "warnings": []
+}

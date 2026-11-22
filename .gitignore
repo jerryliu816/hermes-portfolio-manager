@@ -1,0 +1,42 @@
+# --- secrets ---
+.env
+.env.*
+!.env.example
+
+# --- real financial data / PII (NEVER commit) ---
+test/
+data/
+# A backup archive contains every original statement. It is the same data as
+# test/ and data/, in one file, which is exactly what makes it easy to commit
+# by accident.
+backups/
+*.csv
+*.pdf
+!tests/fixtures/**/*.csv
+!tests/fixtures/**/*.pdf
+# The build record and its distilled lessons describe the real portfolio:
+# totals, balances, account endings. They live on the owner's machine only.
+/PROGRESS.md
+/docs/FOR_FUTURE_SESSIONS.md
+
+# --- python ---
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- node ---
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# --- os / editor ---
+.DS_Store
+.idea/
+.vscode/
+logs/

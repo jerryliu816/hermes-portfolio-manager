@@ -1,0 +1,51 @@
+{
+ "accounts": [
+  {
+   "account_type_hint": "Joint",
+   "cash_balance": null,
+   "display_name": "Joint WROS - TOD",
+   "external_account_key": "Z10000003",
+   "institution": "unknown",
+   "is_aggregated": false,
+   "positions": [
+    {
+     "cost_basis": "$60000.00",
+     "description": "DELTA TECH ETF",
+     "market_value": "$100000.00",
+     "price": "$100.00",
+     "quantity": "1000.000",
+     "symbol": "DDD",
+     "unrealized_gain_loss": "+$40000.00"
+    }
+   ],
+   "reported_value": null
+  },
+  {
+   "account_type_hint": null,
+   "cash_balance": null,
+   "display_name": "Pat Sample - Brokerage Account - 90000001",
+   "external_account_key": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+   "institution": "unknown",
+   "is_aggregated": true,
+   "positions": [
+    {
+     "cost_basis": "$60000.00",
+     "description": "DELTA TECH ETF",
+     "market_value": "$100000.00",
+     "price": "$800.00",
+     "quantity": "125.000",
+     "symbol": "DDD",
+     "unrealized_gain_loss": null
+    }
+   ],
+   "reported_value": null
+  }
+ ],
+ "as_of_date": "Aug-26-2026",
+ "as_of_date_source": "Date downloaded Aug-26-2026 3:04 a.m ET",
+ "document_type": "positions_export",
+ "producing_institution": "unknown",
+ "reported_total_value": null,
+ "schema_version": "1.1",
+ "warnings": []
+}

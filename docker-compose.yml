@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: portfolio-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-portfolio}
+      POSTGRES_USER: ${POSTGRES_USER:-portfolio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-locally}
+    ports:
+      # Host 5433 -> container 5432. 5432 is deliberately avoided so this can
+      # run alongside another local Postgres.
+      #
+      # Bound to loopback: without a host address Docker publishes on every
+      # interface, which puts the database on the LAN behind only a password.
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - portfolio-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-portfolio} -d ${POSTGRES_DB:-portfolio}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: portfolio-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Inside the compose network the database is reachable by service name on
+      # its own port, not the host mapping.
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-portfolio}
+      POSTGRES_USER: ${POSTGRES_USER:-portfolio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-locally}
+      EXTRACTION_PROVIDER: ${EXTRACTION_PROVIDER:-mock}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
+      HERMES_ENABLED: ${HERMES_ENABLED:-false}
+      HERMES_WEBHOOK_URL: ${HERMES_WEBHOOK_URL:-}
+      HERMES_WEBHOOK_SECRET: ${HERMES_WEBHOOK_SECRET:-}
+      APP_ROOT: /app
+      DATA_DIR: /app/data
+      API_PORT: 8787
+    ports:
+      # Loopback only, for the same reason as Postgres above: the MCP endpoint
+      # is unauthenticated. The server inside the container binds 0.0.0.0, which
+      # is fine because the host mapping is what decides who can reach it.
+      - "127.0.0.1:${API_PORT:-8787}:8787"
+    volumes:
+      # The original documents live here. They are the only way to re-derive a
+      # reading if the schema or the extraction provider changes, so this
+      # volume matters as much as the database.
+      - portfolio-sources:/app/data
+      # Somewhere to drop files for import and to receive backups.
+      - ./backups:/backups
+
+volumes:
+  portfolio-pgdata:
+  portfolio-sources:
