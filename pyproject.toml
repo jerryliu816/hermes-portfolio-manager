@@ -2,6 +2,8 @@
 name = "portfolio-manager"
 version = "0.1.0"
 description = "Personal portfolio management with GenAI document extraction"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",

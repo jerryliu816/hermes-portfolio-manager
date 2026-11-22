@@ -232,13 +232,24 @@ def _figure_forms(value: Decimal) -> set[str]:
     return {plain, f"{int(whole):,}.{frac}"}
 
 
-def _locate(pattern: re.Pattern[str], files: list[Path]) -> list[str]:
+#: A copyright notice exists to name its author, and the owner publishes under
+#: their own name. Only the name check honours this, and only on a line that
+#: *starts* with the notice -- a name anywhere else is still a leak.
+COPYRIGHT_LINE = re.compile(r"^\W*Copyright\b")
+
+
+def _locate(
+    pattern: re.Pattern[str], files: list[Path], *, allow_copyright: bool = False
+) -> list[str]:
     """`path:line` for every match. Never the matched text."""
     hits: list[str] = []
     for path in files:
         text = path.read_text(errors="ignore")
+        lines = text.splitlines()
         for match in pattern.finditer(text):
             line = text.count("\n", 0, match.start()) + 1
+            if allow_copyright and COPYRIGHT_LINE.match(lines[line - 1]):
+                continue
             hits.append(f"{path.relative_to(REPO_ROOT)}:{line}")
     return hits
 
@@ -268,9 +279,11 @@ def test_no_real_personal_name_is_tracked(corpus: Corpus) -> None:
     files = _tracked_files()
     hits: list[str] = []
     if long_names:
-        hits += _locate(re.compile(rf"\b(?:{_alternation(long_names)})\b", re.I), files)
+        long_pattern = re.compile(rf"\b(?:{_alternation(long_names)})\b", re.I)
+        hits += _locate(long_pattern, files, allow_copyright=True)
     if short_names:
-        hits += _locate(re.compile(rf"\b(?:{_alternation(short_names)})\b"), files)
+        short_pattern = re.compile(rf"\b(?:{_alternation(short_names)})\b")
+        hits += _locate(short_pattern, files, allow_copyright=True)
     assert not hits, _report("names", hits, "Use an obviously invented name.")
 
 
