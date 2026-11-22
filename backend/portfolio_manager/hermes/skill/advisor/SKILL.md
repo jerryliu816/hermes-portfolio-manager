@@ -111,6 +111,10 @@ and any tax-law change relevant to the account types held.
    - **What would make this wrong**: the views or news it depends on.
    - **Sources**: with dates.
 
+   Write plain markdown. The chat does not render LaTeX, so write `→`, `≈` and
+   `×` rather than `$\rightarrow$`, `\approx` or `\times`, and never wrap text
+   in `$...$`: a dollar sign there means money.
+
 ## Iterating
 
 The user will push back ("don't sell anything in taxable", "I'd rather keep

@@ -128,13 +128,41 @@ function link(href: string, label: ReactNode, key: number): ReactNode {
   );
 }
 
+/**
+ * Models sometimes write symbols as LaTeX (`$\rightarrow$`, `\approx`). This
+ * page does not render math, so known symbol commands become their Unicode
+ * character. Anything unrecognised is left exactly as written: a lone `$` is
+ * money here, so a `$...$` span is only rewritten when every command in it is
+ * one we know.
+ */
+const LATEX_SYMBOLS: Record<string, string> = {
+  rightarrow: "→", to: "→", leftarrow: "←", gets: "←", leftrightarrow: "↔",
+  Rightarrow: "⇒", implies: "⇒", Leftarrow: "⇐", Leftrightarrow: "⇔", iff: "⇔",
+  uparrow: "↑", downarrow: "↓", approx: "≈", sim: "~", neq: "≠", ne: "≠",
+  leq: "≤", le: "≤", geq: "≥", ge: "≥", times: "×", div: "÷", pm: "±", mp: "∓",
+  cdot: "·", ldots: "…", dots: "…", cdots: "⋯", infty: "∞", Delta: "Δ", delta: "δ",
+  sigma: "σ", beta: "β", alpha: "α", mu: "μ", percent: "%", "%": "%", "$": "$",
+};
+const LATEX_COMMAND = /\\([a-zA-Z]+|[%$])/g;
+const LATEX_MATH_SPAN = /\$\s*((?:\\(?:[a-zA-Z]+|[%$])\s*)+)\$/g;
+const LATEX_BARE = /\\([a-zA-Z]+|[%$])(?![a-zA-Z])/g;
+
+function replaceLatexSymbols(text: string): string {
+  if (!text.includes("\\")) return text;
+  const withSpans = text.replace(LATEX_MATH_SPAN, (span, body: string) => {
+    const commands = [...body.matchAll(LATEX_COMMAND)].map((m) => m[1]);
+    return commands.every((c) => c in LATEX_SYMBOLS) ? commands.map((c) => LATEX_SYMBOLS[c]).join("") : span;
+  });
+  return withSpans.replace(LATEX_BARE, (cmd, name: string) => LATEX_SYMBOLS[name] ?? cmd);
+}
+
 function inline(text: string): ReactNode[] {
   const out: ReactNode[] = [];
   let last = 0;
   let key = 0;
   for (const match of text.matchAll(INLINE)) {
     const index = match.index ?? 0;
-    if (index > last) out.push(text.slice(last, index));
+    if (index > last) out.push(replaceLatexSymbols(text.slice(last, index)));
     const token = match[0];
     if (match[1]) {
       out.push(
@@ -154,7 +182,7 @@ function inline(text: string): ReactNode[] {
     }
     last = index + token.length;
   }
-  if (last < text.length) out.push(text.slice(last));
+  if (last < text.length) out.push(replaceLatexSymbols(text.slice(last)));
   return out;
 }
 
