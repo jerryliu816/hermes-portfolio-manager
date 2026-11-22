@@ -166,8 +166,11 @@ and never built into an image — `.dockerignore` excludes it along with `test/`
 and `data/`.
 
 The pre-commit hook at `.githooks/pre-commit` blocks staged `sk-ant-` keys and
-any attempt to commit `.env`, `test/` or `data/`. Enable it with
-`git config core.hooksPath .githooks`, and verify with `make check-secrets`.
+any attempt to commit `.env`, `test/`, `data/` or the local-only docs. The
+pre-push hook refuses to send commits from outside the public history to the
+public repository. Enable both with
+`git config core.hooksPath "$(pwd)/.githooks"` — absolute, so git worktrees
+run them too — and verify with `make check-secrets`.
 
 ## Running against a DGX or another host
 

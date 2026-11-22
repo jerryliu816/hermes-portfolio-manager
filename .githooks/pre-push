@@ -1,0 +1,48 @@
+#!/bin/sh
+# Keep the old, private history out of the public repository.
+#
+# The public repository's history starts at a single commit. Everything before
+# it lives in a separate private repository, and that history contains real
+# portfolio figures. A branch cut from it -- an old worktree, a stale feature
+# branch -- carries the whole of it, so pushing such a branch to the public
+# repository would publish every one of those commits.
+#
+# This refuses any push to the public repository of a commit whose history does
+# not start at the public root. It decides by ancestry, not by branch name, so
+# it covers every branch and every worktree.
+#
+# To bring old work across: cherry-pick it onto main, or apply its diff, then
+# run tests/integration/test_no_private_data_in_repo.py.
+
+PUBLIC_REPO="hermes-portfolio-manager"
+PUBLIC_ROOT="ee73eebefcac4251a4f882d84555a146cc23fc9a"
+ZERO="0000000000000000000000000000000000000000"
+
+remote_name="$1"
+remote_url="$2"
+
+case "$remote_url" in
+    *"$PUBLIC_REPO"*) ;;
+    *) exit 0 ;;
+esac
+
+fail=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+    [ "$local_sha" = "$ZERO" ] && continue  # deleting a remote branch
+
+    roots=$(git rev-list --max-parents=0 "$local_sha")
+    for root in $roots; do
+        if [ "$root" != "$PUBLIC_ROOT" ]; then
+            echo "pre-push: BLOCKED - '$local_ref' is not built on the public history." >&2
+            echo "pre-push:   its history starts at $root, not the public root." >&2
+            echo "pre-push:   Pushing it to '$remote_name' would publish the old private" >&2
+            echo "pre-push:   commits, which contain real figures. Cherry-pick the work" >&2
+            echo "pre-push:   onto main instead." >&2
+            fail=1
+            break
+        fi
+    done
+done
+
+[ "$fail" -eq 0 ] || echo "pre-push: push aborted. Nothing was sent." >&2
+exit $fail

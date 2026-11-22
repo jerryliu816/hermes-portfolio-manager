@@ -121,6 +121,18 @@ the main checkout before committing anything with numbers in it.
 It cannot catch a rounded magnitude ("about $NM") or a figure from a statement
 that was never imported. Those are on you.
 
+### Git hooks
+
+`.githooks/pre-commit` blocks secrets, statements and the local-only docs.
+`.githooks/pre-push` refuses to push to `hermes-portfolio-manager` any commit
+whose history does not start at the public root commit: the history before it
+is private and full of real figures, and a branch cut from it carries all of
+it. Bring old work across by cherry-picking onto `main`, never by merging.
+
+Enable them with `git config core.hooksPath "$(pwd)/.githooks"` — an absolute
+path, so a worktree checked out at an older commit still runs the current hooks
+rather than whatever that commit had.
+
 ## Conventions
 
 - Every phase ends with a commit and a `PROGRESS.md` update.
