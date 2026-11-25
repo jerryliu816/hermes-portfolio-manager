@@ -18,6 +18,12 @@ from sqlalchemy.orm import Session, sessionmaker
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
+# A sign-in configured in the developer's own .env must not reach the suite:
+# a test that builds the app without overriding settings would otherwise get a
+# 401 for every request. The environment outranks .env, and empty means off.
+os.environ["AUTH_USERNAME"] = ""
+os.environ["AUTH_PASSWORD_HASH"] = ""
+
 from portfolio_manager.config import get_settings  # noqa: E402
 from portfolio_manager.models import Base  # noqa: E402
 

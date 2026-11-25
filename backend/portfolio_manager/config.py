@@ -92,11 +92,28 @@ class Settings(BaseSettings):
     hermes_connect_timeout_seconds: float = 5.0
 
     # --- api ----------------------------------------------------------------
+    #: Loopback by default. Anything else exposes the app to the network, and
+    #: `serve.py` refuses it unless the sign-in below is configured.
     api_host: str = "127.0.0.1"
     api_port: int = 8787
+
+    # --- sign-in ------------------------------------------------------------
+    #: Both set turns the sign-in page on. Generate the hash with
+    #: `portfolio auth set-password`. Off when either is empty.
+    auth_username: str = ""
+    auth_password_hash: SecretStr = SecretStr("")
+    auth_session_days: int = 30
     #: The built frontend. Served from the same origin as the API when present,
     #: which is what keeps production to one container and one port.
     frontend_dir: Path = Field(default=REPO_ROOT / "frontend" / "dist")
+
+    @property
+    def auth_enabled(self) -> bool:
+        return bool(self.auth_username and self.auth_password_hash.get_secret_value())
+
+    @property
+    def binds_loopback_only(self) -> bool:
+        return self.api_host in {"127.0.0.1", "::1", "localhost"}
 
     @property
     def database_url(self) -> str:

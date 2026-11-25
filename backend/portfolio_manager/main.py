@@ -17,6 +17,7 @@ from starlette.exceptions import HTTPException
 from starlette.responses import Response
 from starlette.types import Scope
 
+from . import auth
 from .api.deps import SettingsDep
 from .api.v1 import api_router
 from .config import get_settings
@@ -41,7 +42,7 @@ returned. Clients address accounts by this system's own UUID.
 
 #: Paths the server answers itself. The frontend router owns everything else,
 #: so these must never fall back to the single-page app.
-RESERVED_PREFIXES = ("api/", "mcp", "health", "docs", "redoc", "openapi.json")
+RESERVED_PREFIXES = ("api/", "mcp", "health", "docs", "redoc", "openapi.json", "login", "logout")
 
 
 class SinglePageApp(StaticFiles):
@@ -126,7 +127,15 @@ def create_app() -> FastAPI:
     # the settings reaches it rather than the developer's own .env.
     @app.get("/health", tags=["ops"])
     def health(request_settings: SettingsDep) -> dict[str, Any]:
-        return {"status": "ok", "provider": request_settings.extraction_provider}
+        return {
+            "status": "ok",
+            "provider": request_settings.extraction_provider,
+            "auth_enabled": request_settings.auth_enabled,
+        }
+
+    # The sign-in page, and the middleware that sends everything else to it.
+    # Inert unless AUTH_USERNAME and AUTH_PASSWORD_HASH are both set.
+    auth.install(app)
 
     # Serve the built frontend when it exists, so production is one origin.
     # Mounted last so it never shadows an API route.

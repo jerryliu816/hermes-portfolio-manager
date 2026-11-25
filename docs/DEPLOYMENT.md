@@ -66,10 +66,42 @@ things that assumption hides:
   leaves the service quietly answering against a schema the code does not
   expect — the same reason the container entrypoint does it.
 
-`KeepAlive` restarts the job if it dies anyway, throttled to 15 seconds. The
-server binds `127.0.0.1` explicitly rather than `0.0.0.0`: the MCP endpoint is
-unauthenticated, and a service that starts by itself should not quietly become
-reachable from the network. Logs go to `./logs`, which is gitignored.
+`KeepAlive` restarts the job if it dies anyway, throttled to 15 seconds. Logs
+go to `./logs`, which is gitignored.
+
+### Reaching it from other machines
+
+The agent listens on `API_HOST` from `.env`, `127.0.0.1` by default. To serve
+the local network, turn on the sign-in and widen the binding:
+
+```bash
+.venv/bin/portfolio auth set-password      # writes AUTH_USERNAME / AUTH_PASSWORD_HASH
+echo 'API_HOST=0.0.0.0' >> .env
+launchctl kickstart -k gui/$(id -u)/dev.portfolio-manager.api
+```
+
+`portfolio_manager.serve` refuses a non-loopback `API_HOST` while the sign-in
+is unset, so a service that starts by itself cannot quietly become reachable
+with nothing in front of it. macOS may ask once whether Python may accept
+incoming connections.
+
+What the sign-in does and does not cover:
+
+- **Everything except `/login`, `/logout` and `/health` needs a session**: the
+  UI, the API, the OpenAPI docs. A browser is sent to the sign-in page; an API
+  client gets `401` with `X-Auth-Required: 1`.
+- **`/mcp` is open to loopback only.** Hermes runs on this machine and cannot
+  fill in a form. From any other address it needs a session like everything
+  else, so remote MCP clients are not supported. In the container, requests
+  arrive from the Docker bridge rather than loopback, so turning the sign-in on
+  there closes `/mcp` to Hermes on the host too.
+- **It is plain HTTP on the LAN.** The password and the session cookie cross
+  the network unencrypted. Fine on a home network you trust; use an SSH tunnel,
+  Tailscale, or a TLS reverse proxy anywhere else.
+- **Sessions last `AUTH_SESSION_DAYS` (30).** The cookie is signed with a key
+  derived from the password hash, so `set-password` signs every session out.
+- **Five failed sign-ins from one address lock it out for 15 minutes**, in
+  memory; a restart clears the count.
 
 ### While the agent is running
 

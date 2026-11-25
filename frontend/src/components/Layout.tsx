@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Moon, Sun } from "lucide-react";
+import { LogOut, Moon, Sun } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 
@@ -53,6 +53,28 @@ function ThemeToggle() {
   );
 }
 
+/**
+ * Shown only when the server has sign-in turned on. A form post rather than a
+ * fetch, so the cookie is cleared and the browser lands on the sign-in page in
+ * one step.
+ */
+function SignOut() {
+  const { data } = useQuery({ queryKey: ["health"], queryFn: api.health, retry: false });
+  if (!data?.auth_enabled) return null;
+  return (
+    <form method="post" action="/logout">
+      <button
+        type="submit"
+        className="rounded-lg border border-line p-2 text-ink-2 hover:text-ink"
+        aria-label="Sign out"
+        title="Sign out"
+      >
+        <LogOut size={16} />
+      </button>
+    </form>
+  );
+}
+
 /** A standing reminder when accounts still need classifying. */
 function SetupBadge() {
   const { data } = useQuery({
@@ -96,6 +118,7 @@ export function Layout() {
           </nav>
           <SetupBadge />
           <ThemeToggle />
+          <SignOut />
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6">

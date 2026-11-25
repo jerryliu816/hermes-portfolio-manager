@@ -9,8 +9,26 @@
 
 const BASE = "/api/v1";
 
+/**
+ * `fetch`, except that a lapsed sign-in goes back to the sign-in page.
+ *
+ * The server marks its refusal with `X-Auth-Required` so an ordinary 401 from
+ * some other cause is not mistaken for one. The current page is passed along so
+ * signing in returns there.
+ */
+export async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
+  const response = await fetch(input, init);
+  if (response.status === 401 && response.headers.get("X-Auth-Required")) {
+    const here = window.location.pathname + window.location.search;
+    window.location.assign(`/login?next=${encodeURIComponent(here)}`);
+    // Never settles: the page is leaving, and an error would flash first.
+    return new Promise<Response>(() => {});
+  }
+  return response;
+}
+
 async function get<T>(path: string): Promise<T> {
-  const response = await fetch(`${BASE}${path}`);
+  const response = await apiFetch(`${BASE}${path}`);
   if (!response.ok) {
     const detail = await response.json().catch(() => ({ detail: response.statusText }));
     throw new ApiError(response.status, detail?.detail ?? response.statusText);
@@ -19,7 +37,7 @@ async function get<T>(path: string): Promise<T> {
 }
 
 async function send<T>(path: string, method: string, body?: unknown): Promise<T> {
-  const response = await fetch(`${BASE}${path}`, {
+  const response = await apiFetch(`${BASE}${path}`, {
     method,
     headers: { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -501,7 +519,7 @@ async function streamAdvisorMessage(
   onEvent: (event: AdvisorEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const response = await fetch(`${BASE}/advisor/sessions/${sessionId}/messages`, {
+  const response = await apiFetch(`${BASE}/advisor/sessions/${sessionId}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
     body: JSON.stringify({ message }),
@@ -552,14 +570,14 @@ async function streamAdvisorMessage(
 }
 
 async function upload<T>(path: string, form: FormData): Promise<T> {
-  const response = await fetch(`${BASE}${path}`, { method: "POST", body: form });
+  const response = await apiFetch(`${BASE}${path}`, { method: "POST", body: form });
   const body = await response.json().catch(() => ({ detail: response.statusText }));
   if (!response.ok) throw new ApiError(response.status, body?.detail ?? response.statusText);
   return body as T;
 }
 
 async function remove(path: string): Promise<void> {
-  const response = await fetch(`${BASE}${path}`, { method: "DELETE" });
+  const response = await apiFetch(`${BASE}${path}`, { method: "DELETE" });
   if (!response.ok) {
     const detail = await response.json().catch(() => ({ detail: response.statusText }));
     throw new ApiError(response.status, detail?.detail ?? response.statusText);
@@ -579,7 +597,7 @@ export const advisorApi = {
   status: () => get<AdvisorStatus>("/advisor/status"),
 
   philosophy: () => get<Philosophy>("/advisor/philosophy"),
-  starterPhilosophy: async () => (await fetch(`${BASE}/advisor/philosophy/starter`)).text(),
+  starterPhilosophy: async () => (await apiFetch(`${BASE}/advisor/philosophy/starter`)).text(),
   savePhilosophy: (body_markdown: string) =>
     send<Philosophy>("/advisor/philosophy", "PUT", { body_markdown }),
 
@@ -619,6 +637,8 @@ export const advisorApi = {
 // --- endpoints ------------------------------------------------------------
 
 export const api = {
+  health: () =>
+    apiFetch("/health").then((r) => r.json() as Promise<{ status: string; auth_enabled: boolean }>),
   summary: () => get<PortfolioSummary>("/portfolio/summary"),
   assetAllocation: () => get<Breakdown>("/portfolio/allocation/asset-class"),
   taxAllocation: () => get<Breakdown>("/portfolio/allocation/tax-treatment"),
@@ -641,7 +661,7 @@ export const api = {
   snapshots: () => get<Snapshot[]>("/snapshots"),
   snapshotRemoval: (id: string) => get<SnapshotRemoval>(`/snapshots/${id}/removal`),
   deleteSnapshot: async (id: string, force = false) => {
-    const response = await fetch(`${BASE}/snapshots/${id}?force=${force}`, { method: "DELETE" });
+    const response = await apiFetch(`${BASE}/snapshots/${id}?force=${force}`, { method: "DELETE" });
     if (!response.ok) {
       const detail = await response.json().catch(() => ({ detail: response.statusText }));
       throw new ApiError(response.status, detail?.detail ?? response.statusText);
@@ -651,8 +671,8 @@ export const api = {
     send<Snapshot>(`/snapshots/${id}`, "PATCH", { hidden_from_history: hidden }),
 
   policy: () => get<Policy>("/policy"),
-  policyYaml: async () => (await fetch(`${BASE}/policy/yaml`)).text(),
-  starterPolicy: async () => (await fetch(`${BASE}/policy/starter`)).text(),
+  policyYaml: async () => (await apiFetch(`${BASE}/policy/yaml`)).text(),
+  starterPolicy: async () => (await apiFetch(`${BASE}/policy/starter`)).text(),
   savePolicy: (yaml: string) => send<Policy>("/policy", "PUT", { yaml }),
   assessment: () => get<PolicyAssessment>("/policy/assessment"),
 
@@ -667,7 +687,7 @@ export const api = {
     const form = new FormData();
     form.append("file", file);
     const query = provider ? `?provider=${provider}` : "";
-    const response = await fetch(`${BASE}/imports${query}`, { method: "POST", body: form });
+    const response = await apiFetch(`${BASE}/imports${query}`, { method: "POST", body: form });
     const body = await response.json();
     if (!response.ok) throw new ApiError(response.status, body?.detail ?? response.statusText);
     return body;
@@ -686,7 +706,7 @@ export const api = {
     if (options.asOf) params.set("as_of", options.asOf);
     if (options.forceAsOf) params.set("force_as_of", "true");
     const query = params.size ? `?${params.toString()}` : "";
-    const response = await fetch(`${BASE}/imports/batch${query}`, { method: "POST", body: form });
+    const response = await apiFetch(`${BASE}/imports/batch${query}`, { method: "POST", body: form });
     const body = await response.json();
     if (!response.ok) throw new ApiError(response.status, body?.detail ?? response.statusText);
     return body;
