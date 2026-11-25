@@ -875,3 +875,45 @@ def test_a_recommendation_links_back_to_its_conversation(seeded: None) -> None:
     unknown = _call("save_recommendation", title="t", rationale="r", conversation_id="nonsense")
     assert unknown["saved"] is True
     assert _stored(str(unknown["recommendation_id"])).advisor_session_id is None  # type: ignore[attr-defined]
+
+
+# --- the HTTP transport ---------------------------------------------------
+
+
+def test_the_mcp_endpoint_keeps_no_session_state() -> None:
+    """A notification for a session the server no longer holds must not crash.
+
+    Stateful mode let Hermes post to a reaped session: the 202 went out, the
+    write to the closed session failed, and the library then tried to start a
+    second response on the same request. Stateless mode has no session to lose.
+    """
+    from fastapi.testclient import TestClient
+
+    from portfolio_manager.main import create_app
+
+    headers = {"Accept": "application/json, text/event-stream", "Content-Type": "application/json"}
+    init = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {},
+            "clientInfo": {"name": "test", "version": "0"},
+        },
+    }
+    with TestClient(create_app()) as client:
+        first = client.post("/mcp/", json=init, headers=headers)
+        assert first.status_code == 200
+        assert "mcp-session-id" not in first.headers
+
+        # A session id the server never issued, or one it has since dropped.
+        stale = {**headers, "Mcp-Session-Id": "gone", "Mcp-Protocol-Version": "2025-06-18"}
+        note = {"jsonrpc": "2.0", "method": "notifications/initialized"}
+        assert client.post("/mcp/", json=note, headers=stale).status_code == 202
+
+        listing = client.post(
+            "/mcp/", json={"jsonrpc": "2.0", "id": 2, "method": "tools/list"}, headers=stale
+        )
+        assert listing.status_code == 200
+        assert all(f'"{name}"' in listing.text for name in EXPOSED_TOOLS)
