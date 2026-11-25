@@ -15,7 +15,6 @@ cd "$ROOT"
 # Homebrew on it.
 export PATH="/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-PORT="${API_PORT:-8787}"
 PG_PORT="${POSTGRES_PORT:-5433}"
 
 echo "[$(date -u +%FT%TZ)] starting portfolio-manager from $ROOT"
@@ -47,8 +46,8 @@ done
 # fails later and less clearly.
 .venv/bin/alembic upgrade head
 
-echo "[$(date -u +%FT%TZ)] serving on http://localhost:$PORT"
-exec .venv/bin/uvicorn portfolio_manager.main:app \
-  --host 127.0.0.1 \
-  --port "$PORT" \
-  --app-dir backend
+# Host and port come from the settings (API_HOST / API_PORT in .env), not from
+# here. The entry point refuses a non-loopback host unless the sign-in is
+# configured, so editing .env cannot quietly put the app on the network open.
+echo "[$(date -u +%FT%TZ)] starting the API (API_HOST/API_PORT from .env)"
+exec .venv/bin/python -m portfolio_manager.serve

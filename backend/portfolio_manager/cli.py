@@ -76,6 +76,7 @@ backup_app = typer.Typer(help="Backup and restore.", no_args_is_help=True)
 extraction_app = typer.Typer(help="Extraction providers.", no_args_is_help=True)
 #: Bare `portfolio snapshots` still lists, so the sub-commands do not cost
 #: anyone the reflex they already have.
+auth_app = typer.Typer(help="Sign-in for network access.", no_args_is_help=True)
 snapshots_app = typer.Typer(
     short_help="Snapshots.",
     help=(
@@ -100,6 +101,7 @@ app.add_typer(journal_app, name="journal")
 app.add_typer(backup_app, name="backup")
 app.add_typer(extraction_app, name="extraction")
 app.add_typer(snapshots_app, name="snapshots")
+app.add_typer(auth_app, name="auth")
 
 console = Console()
 
@@ -1037,6 +1039,50 @@ def version() -> None:
     console.print(f"  extraction provider: {settings.extraction_provider}")
     console.print(f"  database: {settings.postgres_db} on port {settings.postgres_port}")
     console.print(f"  hermes enabled: {settings.hermes_enabled}")
+
+
+def _set_env_values(path: Path, values: dict[str, str]) -> None:
+    """Replace or append `KEY=value` lines in an env file, keeping the rest."""
+    lines = path.read_text().splitlines() if path.exists() else []
+    remaining = dict(values)
+    out: list[str] = []
+    for line in lines:
+        key = line.split("=", 1)[0].strip()
+        if key in remaining:
+            out.append(f"{key}={remaining.pop(key)}")
+        else:
+            out.append(line)
+    out.extend(f"{key}={value}" for key, value in remaining.items())
+    path.write_text("\n".join(out) + "\n")
+
+
+@auth_app.command("set-password")
+def auth_set_password(
+    username: Annotated[str, typer.Option(prompt=True, help="The name to sign in with")],
+    print_only: Annotated[
+        bool, typer.Option("--print", help="Print the lines instead of writing .env")
+    ] = False,
+) -> None:
+    """Set the sign-in username and password, writing them to .env.
+
+    Only a scrypt hash of the password is stored. Restart the service afterwards;
+    changing the password signs every existing session out.
+    """
+    from .auth import hash_password
+
+    password = typer.prompt("Password", hide_input=True, confirmation_prompt=True)
+    if len(password) < 6:
+        console.print("[red]Use at least 6 characters.[/]")
+        raise typer.Exit(1)
+    values = {"AUTH_USERNAME": username, "AUTH_PASSWORD_HASH": hash_password(password)}
+    if print_only:
+        for key, value in values.items():
+            typer.echo(f"{key}={value}")
+        return
+    env_path = REPO_ROOT / ".env"
+    _set_env_values(env_path, values)
+    env_path.chmod(0o600)
+    console.print(f"[green]Sign-in set[/] for {username!r} in {env_path}. Restart the service.")
 
 
 def main() -> None:

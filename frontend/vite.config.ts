@@ -10,6 +10,8 @@ export default defineConfig({
     proxy: {
       "/api": { target: "http://localhost:8787", changeOrigin: true },
       "/health": { target: "http://localhost:8787", changeOrigin: true },
+      "/login": { target: "http://localhost:8787", changeOrigin: true },
+      "/logout": { target: "http://localhost:8787", changeOrigin: true },
     },
   },
   build: { outDir: "dist", sourcemap: true },
