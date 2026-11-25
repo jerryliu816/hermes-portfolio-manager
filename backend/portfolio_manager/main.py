@@ -97,7 +97,16 @@ def create_app() -> FastAPI:
     # Hermes reads the portfolio over MCP at /mcp. Mounted into the same app so
     # there is one process and one port; the Hermes client uses Streamable HTTP
     # for `url` servers, which is what `http_app()` serves.
-    mcp_app = build_mcp_server().http_app(path="/", transport="http")
+    #
+    # Stateless: every request gets its own transport. In stateful mode a
+    # long-lived session can be reaped (idle timeout) while Hermes still holds
+    # its id; a notification posted to it is acknowledged with 202, the write
+    # to the closed session then fails, and the MCP library tries to send a 500
+    # on a response that is already complete ("Unexpected ASGI message
+    # 'http.response.start' sent, after response already completed"). No tool
+    # here needs session state -- no sampling, elicitation or progress -- so
+    # there is nothing to lose by not keeping any.
+    mcp_app = build_mcp_server().http_app(path="/", transport="http", stateless_http=True)
 
     # A Starlette mount matches only paths *below* it, so bare `/mcp` would 405
     # -- and `/mcp` is what anyone registering the server types. A 307 keeps the
